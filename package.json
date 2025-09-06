@@ -9,7 +9,7 @@
         "dev": "npx tsc --watch",
         "package": "npm run build && npm pack",
         "prepublishOnly": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"No tests yet\""
     },
     "keywords": [
         "auth-tower",
