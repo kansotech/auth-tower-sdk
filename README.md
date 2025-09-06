@@ -26,7 +26,6 @@ Your Application                     Auth Tower SaaS
 ```
 
 **Key Benefits:**
-- ✅ **Single URL**: All customers connect to `https://api.auth-tower.com`
 - ✅ **Tenant Isolation**: Each customer gets their own secure tenant space
 - ✅ **Simple Credentials**: Just tenant ID, client ID, and client secret
 - ✅ **Zero Infrastructure**: No need to deploy or manage Auth Tower yourself
@@ -37,7 +36,6 @@ Your Application                     Auth Tower SaaS
 - **🏢 Multi-Tenant** - Complete tenant isolation and management
 - **📊 Scalable** - Built-in pagination for handling large datasets
 - **🔒 Type Safe** - Full TypeScript support with comprehensive type definitions
-- **🔌 Extensible** - Easy to customize for your specific needs
 - **⚡ Performance** - Optimized for high-throughput applications
 
 ## 📦 Installation
@@ -164,40 +162,6 @@ await authTower.roles.createRole({
 }, 'tenant-id');
 ```
 
-## 🔌 Extending for Your SaaS
-
-Customize the SDK for your specific SaaS needs:
-
-```typescript
-import { BaseClient, AuthTowerSDK } from '@auth-tower/sdk';
-
-// Create custom client for your domain-specific operations
-class BillingClient extends BaseClient {
-  async getSubscription(tenantId: string) {
-    return this.request(`tenants/${tenantId}/subscription`, {
-      method: 'GET'
-    });
-  }
-
-  async updatePlan(tenantId: string, planId: string) {
-    return this.request(`tenants/${tenantId}/plan`, {
-      method: 'PUT',
-      body: { plan_id: planId }
-    });
-  }
-}
-
-// Extend the main SDK
-export class CustomAuthTowerSDK extends AuthTowerSDK {
-  public billing: BillingClient;
-
-  constructor(config) {
-    super(config);
-    this.billing = new BillingClient(config);
-  }
-}
-```
-
 ## 🏭 Production Configuration
 
 Configure the SDK for your production environment:
@@ -258,12 +222,6 @@ const newTenant: CreateTenantRequest = {
 - 📧 **Enterprise Support**: support@auth-tower.com
 - 📚 **Documentation**: https://docs.auth-tower.com
 - 🌐 **Auth Tower Platform**: https://auth-tower.com
-- 💬 **Sales & Demo**: sales@auth-tower.com
-
-## 📄 License
-
-This SDK is proprietary software. Usage is subject to your Auth Tower service agreement.
-
----
+- 💬 **Sales & Demo**: support@auth-tower.com
 
 **Need Auth Tower for your SaaS?** [Contact us](https://auth-tower.com/contact) for enterprise pricing and onboarding.
