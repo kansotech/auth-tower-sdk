@@ -1,0 +1,55 @@
+{
+    "name": "@auth-tower/sdk",
+    "version": "1.0.0",
+    "description": "Official TypeScript SDK for Auth Tower - Enterprise multi-tenant authentication and authorization platform",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "npx tsc",
+        "dev": "npx tsc --watch",
+        "prepublishOnly": "npm run build",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "auth-tower",
+        "authentication",
+        "authorization",
+        "multi-tenant",
+        "saas",
+        "enterprise",
+        "sdk",
+        "typescript",
+        "oauth",
+        "rbac",
+        "permissions",
+        "roles",
+        "identity",
+        "access-management"
+    ],
+    "author": "Auth Tower <support@auth-tower.com>",
+    "license": "UNLICENSED",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/auth-tower/typescript-sdk.git"
+    },
+    "homepage": "https://auth-tower.com",
+    "bugs": {
+        "url": "https://support.auth-tower.com"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=16.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.5.9",
+        "typescript": "^5.2.2"
+    },
+    "dependencies": {},
+    "peerDependencies": {
+        "typescript": ">=4.0.0"
+    },
+    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
