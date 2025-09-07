@@ -85,6 +85,18 @@ export interface CreateTenantRequest {
   redirect_uris: string[];
 }
 
+export interface TenantResponse {
+  id: string;
+  name: string;
+  description?: string;
+  redirect_uris?: string[];
+  parent_id?: string;
+  parent?: TenantResponse;
+  children?: TenantResponse[];
+  created_at: string; // ISO 8601 date string
+  updated_at?: string; // ISO 8601 date string
+}
+
 // Permission types
 export interface CreatePermissionRequest {
   name: string;
