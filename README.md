@@ -102,19 +102,57 @@ if (authTower.pagination.hasNextPage(response)) {
 
 ## 🔐 Authentication & OAuth
 
-Implement OAuth flows for your application users:
+Auth Tower implements a secure OAuth flow where sensitive tokens are never exposed in URL parameters.
+
+### Secure OAuth Flow
 
 ```typescript
-// Initiate OAuth authentication (tenant_id is optional - defaults to your configured tenant)
+// Step 1: Initiate OAuth authentication
 const authResponse = await authTower.auth.initiateAuth({
   redirect_uri: 'https://your-app.com/callback',
-  provider: 'google'
+  provider: 'github', // or 'google'
   // tenant_id: 'specific-tenant' // Optional: override default tenant
 });
 
 // Redirect user to Auth Tower for authentication
 window.location.href = authResponse.auth_url;
+
+// Step 2: Handle callback (user returns to your app)
+// URL will look like: https://your-app.com/callback?state=secure_state_id&status=success
+const urlParams = new URLSearchParams(window.location.search);
+const state = urlParams.get('state');
+const status = urlParams.get('status');
+
+if (status === 'success' && state) {
+  // Step 3: Exchange state for tokens securely
+  const tokens = await authTower.auth.exchangeTokens({ state });
+  
+  console.log('Authentication successful!', tokens.user);
+  // Store tokens securely (httpOnly cookies recommended)
+  storeTokensSecurely(tokens);
+}
 ```
+
+### Token Management
+
+```typescript
+// Refresh access token when needed
+const refreshedTokens = await authTower.auth.refreshToken({
+  refresh_token: storedRefreshToken
+});
+
+// Logout and invalidate tokens
+await authTower.auth.logout({
+  refresh_token: storedRefreshToken // Optional
+});
+```
+
+### Security Benefits
+
+- ✅ **No token exposure in URLs** - Tokens never appear in browser address bar or logs
+- ✅ **Secure state exchange** - Uses cryptographically secure state IDs
+- ✅ **One-time use** - State IDs are automatically deleted after exchange
+- ✅ **Time-limited** - States expire after 5 minutes for security
 
 ## 🏢 Multi-Tenant Management
 

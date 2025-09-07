@@ -9,12 +9,10 @@ export { RoleClient } from './role-client';
 export { AccountClient } from './account-client';
 export { AccessClient } from './access-client';
 export { BaseClient } from './base-client';
+export { AuthMethodClient } from './auth-method-client';
 
 // Utilities
 export { PaginationUtils } from './pagination';
 
 // Types
 export * from './types';
-
-// Re-export for backwards compatibility
-export { AuthTowerSDK as MultiTenancySDK } from './sdk';

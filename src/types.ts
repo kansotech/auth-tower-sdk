@@ -3,14 +3,20 @@ export interface SDKConfig {
   baseURL?: string; // Defaults to Auth Tower SaaS
   pathPrefix?: string; // Defaults to '/api/v1/'
   tenantId: string; // Required: Your tenant identifier
-  clientId: string; // Required: Your client ID
-  clientSecret: string; // Required: Your client secret
+  clientId?: string; // Optional: Your client ID
+  clientSecret?: string; // Optional: Your client secret
+}
+
+export interface AuthConfig {
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface QueryOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
+  tenantScoped?: boolean;
   pagination?: PaginationParams;
 }
 
@@ -35,6 +41,40 @@ export interface AuthInitiateRequest {
 
 export interface AuthInitiateResponse {
   auth_url: string;
+  tenant_id: string;
+}
+
+// Token exchange types
+export interface ExchangeTokenRequest {
+  state: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface LogoutRequest {
+  refresh_token?: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+}
+
+export interface ExchangeTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
+    provider: string;
+    role_id: string;
+    tenant_id: string;
+  };
 }
 
 // Tenant types
@@ -77,4 +117,16 @@ export interface GrantAccessRequest {
 // Resource types
 export interface AddResourceRequest {
   is_public: boolean;
+}
+
+export interface GetAuthMethodsRequest {
+  tenant_id?: string; // Optional: defaults to configured tenant
+}
+
+export interface GetAuthMethodsResponse {
+  methods: Array<{
+    id: string;
+    name: string;
+    tenant_id: string;
+  }>;
 }

@@ -2,45 +2,39 @@ import { BaseClient } from './base-client';
 import { CreatePermissionRequest, PaginationParams, PaginatedResponse } from './types';
 
 export class PermissionClient extends BaseClient {
-  async getPermissions(tenantId?: string, pagination?: PaginationParams): Promise<PaginatedResponse> {
-    const tenant = tenantId || this.config.tenantId;
-    if (!tenant) throw new Error('Tenant ID is required');
-    
-    return this.request(`tenants/${tenant}/permissions`, {
+  async getPermissions(pagination?: PaginationParams): Promise<PaginatedResponse> {
+    return this.request('permissions', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       pagination,
+            tenantScoped: true,
     });
   }
 
-  async getPermission(permissionId: string, tenantId?: string): Promise<any> {
-    const tenant = tenantId || this.config.tenantId;
-    if (!tenant) throw new Error('Tenant ID is required');
-    
-    return this.request(`tenants/${tenant}/permissions/${permissionId}`, {
+  async getPermission(permissionId: string): Promise<any> {
+    return this.request(`permissions/${permissionId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      tenantScoped: true,
     });
   }
 
-  async createPermission(request: CreatePermissionRequest, tenantId?: string): Promise<any> {
-    const tenant = tenantId || this.config.tenantId;
-    if (!tenant) throw new Error('Tenant ID is required');
-    
-    return this.request(`tenants/${tenant}/permissions`, {
+  async createPermission(request: CreatePermissionRequest): Promise<any> {
+
+    return this.request('permissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: request,
+            tenantScoped: true,
     });
   }
 
-  async deletePermission(permissionId: string, tenantId?: string): Promise<any> {
-    const tenant = tenantId || this.config.tenantId;
-    if (!tenant) throw new Error('Tenant ID is required');
-    
-    return this.request(`tenants/${tenant}/permissions/${permissionId}`, {
+  async deletePermission(permissionId: string): Promise<any> {
+
+    return this.request(`permissions/${permissionId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+            tenantScoped: true,
     });
   }
 }

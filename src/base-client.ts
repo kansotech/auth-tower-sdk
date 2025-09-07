@@ -1,15 +1,20 @@
-import { SDKConfig, QueryOptions, PaginationParams } from './types';
+import { SDKConfig, QueryOptions, AuthConfig } from './types';
 
 export class BaseClient {
   protected config: SDKConfig;
   protected baseURL: string;
   protected pathPrefix: string;
+  protected authConfig?: AuthConfig;
 
   constructor(config: SDKConfig) {
     this.config = config;
     // Default to Auth Tower SaaS URL if not provided
     this.baseURL = config.baseURL || 'https://api.auth-tower.com';
     this.pathPrefix = config.pathPrefix || '/api/v1/';
+  }
+
+  setAuthConfig(authConfig: AuthConfig) {
+    this.authConfig = authConfig;
   }
 
   protected async request(path: string, options: QueryOptions = {}): Promise<any> {
@@ -19,12 +24,25 @@ export class BaseClient {
 
     // Use tenant and client credentials for authentication
     options.headers['X-Tenant-ID'] = this.config.tenantId;
-    options.headers['X-Client-ID'] = this.config.clientId;
-    options.headers['Authorization'] = `Bearer ${this.config.clientSecret}`;
+    options.headers['X-Client-ID'] = this.config.clientId ?? "";
+    options.headers['Authorization'] = `Bearer ${this.authConfig?.access_token}`;
     options.headers['Content-Type'] = 'application/json';
     
-    const url = new URL(path, `${this.baseURL}${this.pathPrefix}`);
+    // Default is tenant scoped
+    const tenantScoped = options.tenantScoped == null || options.tenantScoped;
     
+    // Build URL using the native URL constructor - much simpler!
+    const baseUrl = new URL(this.pathPrefix, this.baseURL);
+    
+    let finalPath: string;
+    if (tenantScoped) {
+      finalPath = `tenants/${this.config.tenantId}/${path}`;
+    } else {
+      finalPath = path;
+    }
+    
+    const url = new URL(finalPath, baseUrl);
+
     // Add pagination parameters to URL if provided
     if (options.pagination) {
       url.searchParams.set('limit', options.pagination.limit.toString());

@@ -1,4 +1,4 @@
-import { SDKConfig } from './types';
+import { AuthConfig, SDKConfig } from './types';
 import { AuthClient } from './auth-client';
 import { TenantClient } from './tenant-client';
 import { PermissionClient } from './permission-client';
@@ -6,6 +6,7 @@ import { RoleClient } from './role-client';
 import { AccountClient } from './account-client';
 import { AccessClient } from './access-client';
 import { PaginationUtils } from './pagination';
+import { AuthMethodClient } from './auth-method-client';
 
 export class AuthTowerSDK {
   public auth: AuthClient;
@@ -15,17 +16,14 @@ export class AuthTowerSDK {
   public accounts: AccountClient;
   public access: AccessClient;
   public pagination: typeof PaginationUtils;
+  public authMethods: AuthMethodClient;
+  public config: SDKConfig;
 
   constructor(config: SDKConfig) {
     // Validate required configuration
+    this.config = config;
     if (!config.tenantId) {
       throw new Error('Auth Tower SDK: tenantId is required');
-    }
-    if (!config.clientId) {
-      throw new Error('Auth Tower SDK: clientId is required');
-    }
-    if (!config.clientSecret) {
-      throw new Error('Auth Tower SDK: clientSecret is required');
     }
 
     this.auth = new AuthClient(config);
@@ -34,9 +32,31 @@ export class AuthTowerSDK {
     this.roles = new RoleClient(config);
     this.accounts = new AccountClient(config);
     this.access = new AccessClient(config);
+    this.authMethods = new AuthMethodClient(config);
     this.pagination = PaginationUtils;
   }
 
+  async initialize() {
+    if (!this.config.clientId || !this.config.clientSecret) {
+      throw new Error('Auth Tower SDK: clientId and clientSecret are required for initialization');
+    }
+       const authConfig = await this.auth.getToken();
+
+    if (authConfig) {
+      this.setAuthConfig(authConfig);
+    }
+  }
+
+  setAuthConfig(authConfig: AuthConfig) {
+    this.auth.setAuthConfig(authConfig);
+    this.tenants.setAuthConfig(authConfig);
+    this.permissions.setAuthConfig(authConfig);
+    this.roles.setAuthConfig(authConfig);
+    this.accounts.setAuthConfig(authConfig);
+    this.access.setAuthConfig(authConfig);
+    this.authMethods.setAuthConfig(authConfig);
+  }
+  
   // Convenience methods for backwards compatibility
   async initiateAuth(...args: Parameters<AuthClient['initiateAuth']>) {
     return this.auth.initiateAuth(...args);
