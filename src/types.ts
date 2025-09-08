@@ -26,7 +26,7 @@ export interface PaginationParams {
 }
 
 export interface PaginatedResponse<T = any> {
-  data: T;
+  data: T[];
   total: number;
   limit: number;
   offset: number;
