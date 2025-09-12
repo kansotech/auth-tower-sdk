@@ -18,6 +18,7 @@ export class BaseClient {
   }
 
   protected async request(path: string, options: QueryOptions = {}): Promise<any> {
+    console.log(`Query Options:`, options);
     if (!options.headers) {
       options.headers = {};
     }
@@ -47,6 +48,9 @@ export class BaseClient {
     if (options.pagination) {
       url.searchParams.set('limit', options.pagination.limit.toString());
       url.searchParams.set('offset', options.pagination.offset.toString());
+      if (options.pagination.query != null && options.pagination.query !== '') {
+        url.searchParams.set('query', options.pagination.query);
+      }
     }
     
     console.log(`Fetching URL: ${url.toString()}`);

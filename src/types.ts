@@ -23,6 +23,7 @@ export interface QueryOptions {
 export interface PaginationParams {
   limit: number;
   offset: number;
+  query?: string;
 }
 
 export interface PaginatedResponse<T = any> {
@@ -30,6 +31,7 @@ export interface PaginatedResponse<T = any> {
   total: number;
   limit: number;
   offset: number;
+  query?: string;
 }
 
 // Auth types

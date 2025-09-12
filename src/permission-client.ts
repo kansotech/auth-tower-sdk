@@ -7,7 +7,7 @@ export class PermissionClient extends BaseClient {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       pagination,
-            tenantScoped: true,
+      tenantScoped: true,
     });
   }
 
@@ -34,6 +34,15 @@ export class PermissionClient extends BaseClient {
     return this.request(`permissions/${permissionId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+            tenantScoped: true,
+    });
+  }
+
+  async updatePermission(permissionId: string, request: CreatePermissionRequest): Promise<any> {
+    return this.request(`permissions/${permissionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: request,
             tenantScoped: true,
     });
   }

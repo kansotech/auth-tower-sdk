@@ -18,4 +18,20 @@ export class RoleClient extends BaseClient {
       body: request,
     });
   }
+
+  async deleteRole(id: string): Promise<any> {
+
+    return this.request(`roles/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  async updateRole(id: string, request: CreateRoleRequest): Promise<any> {
+    return this.request(`roles/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: request,
+    });
+  }
 }
