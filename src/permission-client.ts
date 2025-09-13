@@ -37,13 +37,5 @@ export class PermissionClient extends BaseClient {
             tenantScoped: true,
     });
   }
-
-  async updatePermission(permissionId: string, request: CreatePermissionRequest): Promise<any> {
-    return this.request(`permissions/${permissionId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: request,
-            tenantScoped: true,
-    });
-  }
+ 
 }
