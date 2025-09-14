@@ -9,6 +9,7 @@ import { PaginationUtils } from './pagination';
 import { IDProviderClient } from './id-provider-client';
 import { TokenManager } from './token-manager';
 import { MemoryTokenStorage, BrowserTokenStorage } from './token-storage';
+import { RedirectURIsClient } from './redirect-uris-client';
 
 export class AuthTowerSDK {
   public auth: AuthClient;
@@ -21,7 +22,8 @@ export class AuthTowerSDK {
   public idProviderClient: IDProviderClient;
   public config: SDKConfig;
   private tokenManager?: TokenManager;
-
+  public redirectURIs: RedirectURIsClient;
+  
   constructor(config: SDKConfig) {
     // Validate required configuration
     this.config = config;
@@ -37,6 +39,7 @@ export class AuthTowerSDK {
     this.access = new AccessClient(config);
     this.idProviderClient = new IDProviderClient(config);
     this.pagination = PaginationUtils;
+    this.redirectURIs = new RedirectURIsClient(config);
   }
 
   setTokenManager(tokenManager: TokenManager): void {
@@ -50,6 +53,7 @@ export class AuthTowerSDK {
     this.accounts.setTokenManager(tokenManager);
     this.access.setTokenManager(tokenManager);
     this.idProviderClient.setTokenManager(tokenManager);
+    this.redirectURIs.setTokenManager(tokenManager);
   }
 
   getTokenManager(): TokenManager | undefined {

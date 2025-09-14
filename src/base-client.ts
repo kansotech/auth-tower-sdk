@@ -9,7 +9,7 @@ export class BaseClient {
   protected tokenManager?: TokenManager;
 
   constructor(config: SDKConfig) {
-    this.baseURL = config.baseURL || 'https://api.auth-tower.com';
+    this.baseURL = config.baseURL || 'https://www.api.auth-tower.com';
     this.pathPrefix = config.pathPrefix || '/api/v1/';
     this.clientID = config.clientId;
     this.clientSecret = config.clientSecret;

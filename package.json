@@ -1,6 +1,6 @@
 {
     "name": "@auth-tower/sdk",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "description": "Official TypeScript SDK for Auth Tower - Enterprise multi-tenant authentication and authorization platform",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -31,7 +31,7 @@
     "license": "UNLICENSED",
     "repository": {
         "type": "git",
-        "url": "https://github.com/auth-tower/typescript-sdk.git"
+        "url": "https://github.com/kansotech/auth-tower-sdk"
     },
     "homepage": "https://auth-tower.com",
     "bugs": {

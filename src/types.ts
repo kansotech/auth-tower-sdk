@@ -48,6 +48,18 @@ export interface QueryOptions {
   pagination?: PaginationParams;
 }
 
+// Response wrapper for all API calls
+export interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: {
+    status: number;
+    statusText: string;
+    message: string;
+    code: string;
+  };
+}
+
 export interface PaginationParams {
   limit: number;
   offset: number;
