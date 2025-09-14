@@ -6,10 +6,10 @@ export class AuthClient extends BaseClient {
     return this.request('auth/oauth/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
+      tenantIndependent: true,
       body: {
         ...request,
-        tenant_id: request.tenant_id || this.config.tenantId // Use configured tenant if not specified
+        tenant_id: request.tenant_id || this.tokenManager?.getInitialTenantId()
       },
     });
   }
@@ -20,12 +20,19 @@ export class AuthClient extends BaseClient {
    * @returns Promise containing access tokens and user information
    */
   async exchangeTokens(request: ExchangeTokenRequest): Promise<ExchangeTokenResponse> {
-    return this.request('auth/exchange', {
+    const response = await this.request('auth/exchange', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
+      tenantIndependent: true,
       body: request,
     });
+
+    // Automatically store the tokens if token manager is available
+    if (this.tokenManager) {
+      await this.tokenManager.storeUserToken(this.tokenManager?.getInitialTenantId(), response);
+    }
+
+    return response;
   }
 
   /**
@@ -34,12 +41,19 @@ export class AuthClient extends BaseClient {
    * @returns Promise containing new access tokens and user information
    */
   async refreshToken(request: RefreshTokenRequest): Promise<ExchangeTokenResponse> {
-    return this.request('auth/refresh', {
+    const response = await this.request('auth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
+      tenantIndependent: true,
       body: request,
     });
+
+    // Automatically store the refreshed tokens if token manager is available
+    if (this.tokenManager) {
+      await this.tokenManager.storeUserToken(this.tokenManager?.getInitialTenantId(), response);
+    }
+
+    return response;
   }
 
   /**
@@ -48,25 +62,48 @@ export class AuthClient extends BaseClient {
    * @returns Promise containing logout confirmation
    */
   async logout(request?: LogoutRequest): Promise<LogoutResponse> {
-    return this.request('auth/logout', {
+    // Get refresh token from storage if not provided
+    let logoutRequest = request;
+    if (!logoutRequest?.refresh_token && this.tokenManager) {
+      const userToken = await this.tokenManager.getUserToken();
+      if (userToken?.refresh_token) {
+        logoutRequest = { refresh_token: userToken.refresh_token };
+      }
+    }
+
+    const response = await this.request('auth/logout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
-      body: request || {},
+      tenantIndependent: true,
+      body: logoutRequest || {},
     });
+
+    // Clear stored tokens after successful logout
+    if (this.tokenManager) {
+      await this.tokenManager.clearTenantTokens();
+    }
+
+    return response;
   }
 
   async getToken(): Promise<AuthConfig> {
-    return this.request('auth/token', {
+    const response = await this.request('auth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
+      tenantIndependent: true,
       body: {
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
+        client_id: this.clientID,
+        client_secret: this.clientSecret,
         grant_type: 'client_credentials',
-        tenant_id: this.config.tenantId // Use configured tenant if not specified
+        tenant_id: this.tokenManager?.getInitialTenantId() || '' // Use configured tenant if not specified
       },
     });
+
+    // Automatically store the client credentials token if token manager is available
+    if (this.tokenManager) {
+      await this.tokenManager.storeClientToken(this.tokenManager?.getInitialTenantId(), response);
+    }
+
+    return response;
   }
 }

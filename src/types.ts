@@ -7,16 +7,44 @@ export interface SDKConfig {
   clientSecret?: string; // Optional: Your client secret
 }
 
+export interface Permission {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string; // ISO 8601 date string
+  updated_at?: string; // ISO 8601 date string
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: Permission[];
+  created_at: string; // ISO 8601 date string
+  updated_at?: string; // ISO 8601 date string
+}
+
 export interface AuthConfig {
   access_token: string;
   refresh_token: string;
+}
+
+export interface AccountData {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  provider: string;
+  role_id: string;
+  tenant_id: string;
 }
 
 export interface QueryOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
-  tenantScoped?: boolean;
+  tenantIndependent?: boolean;
+  tenantID?: string;
   pagination?: PaginationParams;
 }
 
@@ -68,15 +96,7 @@ export interface ExchangeTokenResponse {
   refresh_token: string;
   token_type: string;
   expires_in: number;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    avatar?: string;
-    provider: string;
-    role_id: string;
-    tenant_id: string;
-  };
+  user: AccountData;
 }
 
 // Tenant types
@@ -97,6 +117,16 @@ export interface TenantResponse {
   children?: TenantResponse[];
   created_at: string; // ISO 8601 date string
   updated_at?: string; // ISO 8601 date string
+}
+
+export interface TenantContext extends TenantResponse {
+	permissions: Permission[];
+	role: Role;
+	role_id: string;
+  usage: Record<string, any>;
+  subscription_id?: string;
+  subscription_class_id?: string;
+  constraints?: Record<string, any>;
 }
 
 // Permission types
@@ -128,6 +158,12 @@ export interface GrantAccessRequest {
   role_id: string;
 }
 
+export interface CheckPermissionRequest {
+  object_id: string;
+  access_type: string;
+  required_permission: string;
+}
+
 // Resource types
 export interface AddResourceRequest {
   is_public: boolean;
@@ -138,9 +174,9 @@ export interface GetAuthMethodsRequest {
 }
 
 export interface GetAuthMethodsResponse {
-  methods: Array<{
-    id: string;
-    name: string;
-    tenant_id: string;
-  }>;
+  providers: {
+    id: string,
+    provider: string,
+    tenant_id: string,
+  }[];
 }

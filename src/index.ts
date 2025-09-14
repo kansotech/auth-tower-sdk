@@ -9,7 +9,18 @@ export { RoleClient } from './role-client';
 export { AccountClient } from './account-client';
 export { AccessClient } from './access-client';
 export { BaseClient } from './base-client';
-export { AuthMethodClient } from './auth-method-client';
+export { IDProviderClient as AuthProviderClient } from './id-provider-client';
+
+// Token management (simplified)
+export { TokenManager } from './token-manager';
+export { 
+  TokenStorage, 
+  TokenData, 
+  ClientCredentialsTokenData,
+  MemoryTokenStorage, 
+  BrowserTokenStorage, 
+  SecureTokenStorage 
+} from './token-storage';
 
 // Utilities
 export { PaginationUtils } from './pagination';

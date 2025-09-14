@@ -7,7 +7,6 @@ export class PermissionClient extends BaseClient {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       pagination,
-      tenantScoped: true,
     });
   }
 
@@ -15,7 +14,6 @@ export class PermissionClient extends BaseClient {
     return this.request(`permissions/${permissionId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: true,
     });
   }
 
@@ -25,7 +23,6 @@ export class PermissionClient extends BaseClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: request,
-            tenantScoped: true,
     });
   }
 
@@ -34,7 +31,6 @@ export class PermissionClient extends BaseClient {
     return this.request(`permissions/${permissionId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-            tenantScoped: true,
     });
   }
  

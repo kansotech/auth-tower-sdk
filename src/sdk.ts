@@ -1,4 +1,4 @@
-import { AuthConfig, SDKConfig } from './types';
+import { SDKConfig, AccountData } from './types';
 import { AuthClient } from './auth-client';
 import { TenantClient } from './tenant-client';
 import { PermissionClient } from './permission-client';
@@ -6,7 +6,9 @@ import { RoleClient } from './role-client';
 import { AccountClient } from './account-client';
 import { AccessClient } from './access-client';
 import { PaginationUtils } from './pagination';
-import { AuthMethodClient } from './auth-method-client';
+import { IDProviderClient } from './id-provider-client';
+import { TokenManager } from './token-manager';
+import { MemoryTokenStorage, BrowserTokenStorage } from './token-storage';
 
 export class AuthTowerSDK {
   public auth: AuthClient;
@@ -16,8 +18,9 @@ export class AuthTowerSDK {
   public accounts: AccountClient;
   public access: AccessClient;
   public pagination: typeof PaginationUtils;
-  public authMethods: AuthMethodClient;
+  public idProviderClient: IDProviderClient;
   public config: SDKConfig;
+  private tokenManager?: TokenManager;
 
   constructor(config: SDKConfig) {
     // Validate required configuration
@@ -32,31 +35,63 @@ export class AuthTowerSDK {
     this.roles = new RoleClient(config);
     this.accounts = new AccountClient(config);
     this.access = new AccessClient(config);
-    this.authMethods = new AuthMethodClient(config);
+    this.idProviderClient = new IDProviderClient(config);
     this.pagination = PaginationUtils;
   }
 
-  async initialize() {
+  setTokenManager(tokenManager: TokenManager): void {
+    this.tokenManager = tokenManager;
+
+    // Set token manager on all clients
+    this.auth.setTokenManager(tokenManager);
+    this.tenants.setTokenManager(tokenManager);
+    this.permissions.setTokenManager(tokenManager);
+    this.roles.setTokenManager(tokenManager);
+    this.accounts.setTokenManager(tokenManager);
+    this.access.setTokenManager(tokenManager);
+    this.idProviderClient.setTokenManager(tokenManager);
+  }
+
+  getTokenManager(): TokenManager | undefined {
+    return this.tokenManager;
+  }
+
+  /**
+   * Initialize SDK for server-side usage with client credentials
+   * Requires clientId and clientSecret, sets up memory token storage
+   */
+  async initializeServer(): Promise<void> {
     if (!this.config.clientId || !this.config.clientSecret) {
-      throw new Error('Auth Tower SDK: clientId and clientSecret are required for initialization');
+      throw new Error('Auth Tower SDK: clientId and clientSecret are required for server initialization');
     }
-       const authConfig = await this.auth.getToken();
 
-    if (authConfig) {
-      this.setAuthConfig(authConfig);
-    }
+    // Set up memory token storage for server
+    const tokenManager = new TokenManager(this.config, {
+      storage: new MemoryTokenStorage(),
+      autoRefresh: true
+    });
+
+    this.setTokenManager(tokenManager);
+
+    // Get client credentials token (automatically stored by TokenManager)
+    await this.auth.getToken();
   }
 
-  setAuthConfig(authConfig: AuthConfig) {
-    this.auth.setAuthConfig(authConfig);
-    this.tenants.setAuthConfig(authConfig);
-    this.permissions.setAuthConfig(authConfig);
-    this.roles.setAuthConfig(authConfig);
-    this.accounts.setAuthConfig(authConfig);
-    this.access.setAuthConfig(authConfig);
-    this.authMethods.setAuthConfig(authConfig);
+  /**
+   * Initialize SDK for client-side usage
+   * Sets up browser token storage for persistent token management
+   */
+  async initializeClient(): Promise<void> {
+    // Set up browser token storage for client
+    const tokenManager = new TokenManager(this.config, {
+      storage: new BrowserTokenStorage(),
+      autoRefresh: true,
+      refreshThreshold: 300 // 5 minutes before expiry
+    });
+
+    this.setTokenManager(tokenManager);
   }
-  
+
   // Convenience methods for backwards compatibility
   async initiateAuth(...args: Parameters<AuthClient['initiateAuth']>) {
     return this.auth.initiateAuth(...args);
@@ -114,27 +149,63 @@ export class AuthTowerSDK {
     return this.access.addResource(...args);
   }
 
-  // Utility methods
-  setClientSecret(clientSecret: string): void {
-    this.auth.setClientSecret(clientSecret);
-    this.tenants.setClientSecret(clientSecret);
-    this.permissions.setClientSecret(clientSecret);
-    this.roles.setClientSecret(clientSecret);
-    this.accounts.setClientSecret(clientSecret);
-    this.access.setClientSecret(clientSecret);
+  /**
+   * Switch to a different tenant
+   * @param tenantId - The tenant ID to switch to
+   * @returns Promise<boolean> - true if switch succeeded, false if login is needed
+   */
+  async switchTenant(tenantId: string): Promise<void> {
+    if (this.tokenManager) {
+      await this.tokenManager.switchTenant(tenantId);
+    }
   }
 
-  setTenantId(tenantId: string): void {
-    this.auth.setTenantId(tenantId);
-    this.tenants.setTenantId(tenantId);
-    this.permissions.setTenantId(tenantId);
-    this.roles.setTenantId(tenantId);
-    this.accounts.setTenantId(tenantId);
-    this.access.setTenantId(tenantId);
+  async getCurrentTenantId(): Promise<string | null> {
+    if (this.tokenManager) {
+      return this.tokenManager.getCurrentTenantId();
+    }
+    return null;
+  }
+  
+  /**
+   * Check if user is authenticated for the current tenant
+   * @param tenantId - Optional tenant ID to check (defaults to current tenant)
+   * @returns Promise<boolean> - true if user is logged in, false otherwise
+   */
+  async isLoggedIn(tenantId ?: string): Promise < boolean > {
+      if(!this.tokenManager) {
+      // Without token manager, we can't determine authentication status
+      return false;
+    }
+
+    try {
+      const targetTenantId = tenantId || this.config.tenantId;
+      return await this.tokenManager.isAuthenticated(targetTenantId);
+    } catch (error) {
+      console.error('Failed to check authentication status:', error);
+      return false;
+    }
   }
 
-  getConfig(): SDKConfig {
-    return this.auth.getConfig();
+  /**
+   * Get account/user data from stored tokens
+   * @param tenantId - Optional tenant ID to get data for (defaults to current tenant)
+   * @returns Promise<AccountData | null> - user information if available, null otherwise
+   */
+  async getAccountData(tenantId?: string): Promise<AccountData | null> {
+    if (!this.tokenManager) {
+      // Without token manager, we can't access stored user data
+      return null;
+    }
+
+    try {
+      const targetTenantId = tenantId || this.config.tenantId;
+      const userData = await this.tokenManager.getCurrentUser(targetTenantId);
+      return userData || null;
+    } catch (error) {
+      console.error('Failed to get account data:', error);
+      return null;
+    }
   }
 
   // Pagination helpers (for backwards compatibility)

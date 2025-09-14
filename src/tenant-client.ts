@@ -1,20 +1,28 @@
 import { BaseClient } from './base-client';
-import { CreateTenantRequest, PaginationParams, PaginatedResponse, TenantResponse } from './types';
+import { CreateTenantRequest, PaginationParams, PaginatedResponse, TenantResponse, TenantContext } from './types';
 
 export class TenantClient extends BaseClient {
   async getTenants(pagination?: PaginationParams): Promise<PaginatedResponse<TenantResponse>> {
     return this.request('tenants', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      tenantScoped: false,
+      tenantIndependent: true,
       pagination,
     });
   }
 
-  async getTenant(tenantId: string): Promise<TenantResponse> {
+  async getChildrenTenants(pagination?: PaginationParams): Promise<PaginatedResponse<TenantResponse>> {
+    return this.request(`children`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      pagination,
+    });
+  }
+
+  async getTenant(tenantId: string): Promise<TenantContext> {
     return this.request(`tenants/${tenantId}`, {
       method: 'GET',
-          tenantScoped: false,
+      tenantIndependent: true,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -22,7 +30,7 @@ export class TenantClient extends BaseClient {
   async createTenant(request: CreateTenantRequest): Promise<TenantResponse> {
     return this.request('tenants', {
       method: 'POST',
-            tenantScoped: false,
+      tenantIndependent: true,
       headers: { 'Content-Type': 'application/json' },
       body: request,
     });

@@ -1,20 +1,22 @@
-import { SDKConfig, QueryOptions, AuthConfig } from './types';
+import { SDKConfig, QueryOptions } from './types';
+import { TokenManager } from './token-manager';
 
 export class BaseClient {
-  protected config: SDKConfig;
   protected baseURL: string;
   protected pathPrefix: string;
-  protected authConfig?: AuthConfig;
+  protected clientID?: string;
+  protected clientSecret?: string;
+  protected tokenManager?: TokenManager;
 
   constructor(config: SDKConfig) {
-    this.config = config;
-    // Default to Auth Tower SaaS URL if not provided
     this.baseURL = config.baseURL || 'https://api.auth-tower.com';
     this.pathPrefix = config.pathPrefix || '/api/v1/';
+    this.clientID = config.clientId;
+    this.clientSecret = config.clientSecret;
   }
 
-  setAuthConfig(authConfig: AuthConfig) {
-    this.authConfig = authConfig;
+  setTokenManager(tokenManager: TokenManager): void {
+    this.tokenManager = tokenManager;
   }
 
   protected async request(path: string, options: QueryOptions = {}): Promise<any> {
@@ -22,26 +24,36 @@ export class BaseClient {
     if (!options.headers) {
       options.headers = {};
     }
+    const tenantID = options.tenantID || this.tokenManager?.getCurrentTenantId();
 
     // Use tenant and client credentials for authentication
-    options.headers['X-Tenant-ID'] = this.config.tenantId;
-    options.headers['X-Client-ID'] = this.config.clientId ?? "";
-    options.headers['Authorization'] = `Bearer ${this.authConfig?.access_token}`;
+    options.headers['X-Tenant-ID'] = tenantID ?? '';
+    options.headers['X-Client-ID'] = this.clientID ?? '';
+
+    // Get access token from token manager
+    if (this.tokenManager) {
+      const validToken = await this.tokenManager.getValidToken();
+      if (validToken) {
+        options.headers['Authorization'] = `Bearer ${validToken}`;
+      }
+    }
+
     options.headers['Content-Type'] = 'application/json';
-    
+
     // Default is tenant scoped
-    const tenantScoped = options.tenantScoped == null || options.tenantScoped;
-    
+    const tenantScoped = !options.tenantIndependent;
+
     // Build URL using the native URL constructor - much simpler!
     const baseUrl = new URL(this.pathPrefix, this.baseURL);
-    
+
+
     let finalPath: string;
     if (tenantScoped) {
-      finalPath = `tenants/${this.config.tenantId}/${path}`;
+      finalPath = `tenants/${tenantID}/${path}`;
     } else {
       finalPath = path;
     }
-    
+
     const url = new URL(finalPath, baseUrl);
 
     // Add pagination parameters to URL if provided
@@ -52,7 +64,7 @@ export class BaseClient {
         url.searchParams.set('query', options.pagination.query);
       }
     }
-    
+
     console.log(`Fetching URL: ${url.toString()}`);
 
     try {
@@ -63,6 +75,29 @@ export class BaseClient {
       });
 
       if (!response.ok) {
+        // Handle token expiry - try to refresh if possible
+        if (response.status === 401 && this.tokenManager) {
+          const refreshed = await this.tryRefreshToken();
+          if (refreshed) {
+            // Retry the request with the new token
+            const newToken = await this.tokenManager.getValidToken();
+            if (newToken) {
+              options.headers['Authorization'] = `Bearer ${newToken}`;
+              const retryResponse = await fetch(url.toString(), {
+                method: options.method || 'GET',
+                headers: options.headers,
+                body: options.body ? JSON.stringify(options.body) : undefined,
+              });
+
+              if (retryResponse.ok) {
+                const data = await retryResponse.json();
+                console.log(data);
+                return data;
+              }
+            }
+          }
+        }
+
         throw new Error(`Auth Tower API Error: ${response.status} ${response.statusText} - ${await response.text()}`);
       }
 
@@ -75,16 +110,57 @@ export class BaseClient {
     }
   }
 
-  // Configuration methods
-  setClientSecret(clientSecret: string): void {
-    this.config.clientSecret = clientSecret;
-  }
+  private async tryRefreshToken(): Promise<boolean> {
+    if (!this.tokenManager) return false;
 
-  setTenantId(tenantId: string): void {
-    this.config.tenantId = tenantId;
-  }
+    try {
+      const userToken = await this.tokenManager.getUserToken();
+      if (userToken?.refresh_token) {
+        // Try to refresh user token
+        const response = await fetch(`${this.baseURL}${this.pathPrefix}auth/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': this.tokenManager?.getInitialTenantId() || '',
+            'X-Client-ID': this.clientID || ''
+          },
+          body: JSON.stringify({ refresh_token: userToken.refresh_token })
+        });
 
-  getConfig(): SDKConfig {
-    return { ...this.config };
+        if (response.ok) {
+          const tokenResponse = await response.json();
+          await this.tokenManager.storeUserToken(this.tokenManager?.getInitialTenantId(), tokenResponse);
+          return true;
+        }
+      }
+
+      // Fall back to client credentials if available
+      if (this.clientID && this.clientSecret) {
+        const response = await fetch(`${this.baseURL}${this.pathPrefix}auth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-ID': this.tokenManager?.getInitialTenantId() || '',
+            'X-Client-ID': this.clientID || ''
+          },
+          body: JSON.stringify({
+            client_id: this.clientID,
+            client_secret: this.clientSecret,
+            grant_type: 'client_credentials',
+            tenant_id: this.tokenManager?.getInitialTenantId() || ''
+          })
+        });
+
+        if (response.ok) {
+          const tokenResponse = await response.json();
+          await this.tokenManager.storeClientToken(this.tokenManager?.getInitialTenantId(), tokenResponse);
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+    }
+
+    return false;
   }
 }
