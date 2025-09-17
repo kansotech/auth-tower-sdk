@@ -27,12 +27,20 @@ export class TenantClient extends BaseClient {
     });
   }
 
-  async createTenant(request: CreateTenantRequest): Promise<TenantResponse> {
-    return this.request('tenants', {
+    async createTenant(request: CreateTenantRequest): Promise<TenantResponse> {
+      return this.request('tenants', {
+        method: 'POST',
+        tenantIndependent: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: request,
+      });
+    }
+
+  async allowSubtenancy(allow: boolean): Promise<void> {
+    return this.request(`allow-subtenancy`, {
       method: 'POST',
-      tenantIndependent: true,
       headers: { 'Content-Type': 'application/json' },
-      body: request,
+      body: { allow },
     });
   }
 }

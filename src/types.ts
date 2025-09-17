@@ -113,6 +113,7 @@ export interface ExchangeTokenResponse {
 
 // Tenant types
 export interface CreateTenantRequest {
+  parent_id?: string;
   auth_providers: string[];
   name: string;
   description: string;
@@ -127,6 +128,7 @@ export interface TenantResponse {
   parent_id?: string;
   parent?: TenantResponse;
   children?: TenantResponse[];
+  allows_subtenants: boolean;
   created_at: string; // ISO 8601 date string
   updated_at?: string; // ISO 8601 date string
 }
@@ -139,6 +141,7 @@ export interface TenantContext extends TenantResponse {
   subscription_id?: string;
   subscription_class_id?: string;
   constraints?: Record<string, any>;
+  allows_subtenants: boolean;
 }
 
 // Permission types
